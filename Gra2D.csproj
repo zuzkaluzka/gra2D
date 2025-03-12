@@ -1,0 +1,25 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWPF>true</UseWPF>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="gracz.png" />
+    <None Remove="laka.png" />
+    <None Remove="las.png" />
+    <None Remove="skala.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="gracz.png" />
+    <Resource Include="laka.png" />
+    <Resource Include="las.png" />
+    <Resource Include="skala.png" />
+  </ItemGroup>
+
+</Project>
