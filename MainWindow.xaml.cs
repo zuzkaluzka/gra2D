@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using System;
 using System.IO;
 using System.Windows;
 using System.Windows.Controls;
@@ -61,17 +62,17 @@ namespace Gra2D
         {
             try
             {
-                var linie = File.ReadAllLines(sciezkaPliku);
+                var linie = File.ReadAllLines(sciezkaPliku);//zwraca tablicę stringów, np. linie[0] to pierwsza linia pliku
                 wysokoscMapy = linie.Length;
-                szerokoscMapy = linie[0].Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;
+                szerokoscMapy = linie[0].Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;//zwraca liczbę elementów w tablicy
                 mapa = new int[wysokoscMapy, szerokoscMapy];
 
                 for (int y = 0; y < wysokoscMapy; y++)
                 {
-                    var czesci = linie[y].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                    var czesci = linie[y].Split(' ', StringSplitOptions.RemoveEmptyEntries);//zwraca tablicę stringów np. czesci[0] to pierwszy element linii
                     for (int x = 0; x < szerokoscMapy; x++)
                     {
-                        mapa[y, x] = int.Parse(czesci[x]);
+                        mapa[y, x] = int.Parse(czesci[x]);//wczytanie mapy z pliku
                     }
                 }
 
@@ -104,7 +105,7 @@ namespace Gra2D
                         int rodzaj = mapa[y, x];
                         if (rodzaj >= 1 && rodzaj < ILE_TERENOW)
                         {
-                            obraz.Source = obrazyTerenu[rodzaj];
+                            obraz.Source = obrazyTerenu[rodzaj];//wczytanie obrazka terenu
                         }
                         else
                         {
@@ -113,14 +114,14 @@ namespace Gra2D
 
                         Grid.SetRow(obraz, y);
                         Grid.SetColumn(obraz, x);
-                        SiatkaMapy.Children.Add(obraz);
+                        SiatkaMapy.Children.Add(obraz);//dodanie obrazka do siatki na ekranie
                         tablicaTerenu[y, x] = obraz;
                     }
                 }
 
                 // Dodanie obrazka gracza – ustawiamy go na wierzchu
                 SiatkaMapy.Children.Add(obrazGracza);
-                Panel.SetZIndex(obrazGracza, 1);
+                Panel.SetZIndex(obrazGracza, 1);//ustawienie obrazka gracza na wierzchu
                 pozycjaGraczaX = 0;
                 pozycjaGraczaY = 0;
                 AktualizujPozycjeGracza();
@@ -146,12 +147,12 @@ namespace Gra2D
         {
             int nowyX = pozycjaGraczaX;
             int nowyY = pozycjaGraczaY;
-
+            //zmiana pozycji gracza
             if (e.Key == Key.Up) nowyY--;
             else if (e.Key == Key.Down) nowyY++;
             else if (e.Key == Key.Left) nowyX--;
             else if (e.Key == Key.Right) nowyX++;
-
+            //Gracz nie może wyjść poza mapę
             if (nowyX >= 0 && nowyX < szerokoscMapy && nowyY >= 0 && nowyY < wysokoscMapy)
             {
                 // Gracz nie może wejść na pole ze skałami
@@ -163,10 +164,10 @@ namespace Gra2D
                 }
             }
 
-            // Obsługa wycinania lasu – naciskamy spację
+            // Obsługa wycinania lasu – naciskamy klawisz C
             if (e.Key == Key.C)
             {
-                if (mapa[pozycjaGraczaY, pozycjaGraczaX] == LAS)
+                if (mapa[pozycjaGraczaY, pozycjaGraczaX] == LAS)//jeśli gracz stoi na polu lasu
                 {
                     mapa[pozycjaGraczaY, pozycjaGraczaX] = LAKA;
                     tablicaTerenu[pozycjaGraczaY, pozycjaGraczaX].Source = obrazyTerenu[LAKA];
@@ -179,13 +180,13 @@ namespace Gra2D
         // Obsługa przycisku "Wczytaj mapę"
         private void WczytajMape_Click(object sender, RoutedEventArgs e)
         {
-            Microsoft.Win32.OpenFileDialog dlg = new Microsoft.Win32.OpenFileDialog();
-            dlg.Filter = "Plik mapy (*.txt)|*.txt";
-            dlg.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory; // Ustawienie katalogu początkowego
-            bool? wynik = dlg.ShowDialog();
-            if (wynik == true)
+            OpenFileDialog oknoDialogowe = new OpenFileDialog();
+            oknoDialogowe.Filter = "Plik mapy (*.txt)|*.txt";
+            oknoDialogowe.InitialDirectory = AppDomain.CurrentDomain.BaseDirectory; // Ustawienie katalogu początkowego
+            bool? czyOtwartoMape = oknoDialogowe.ShowDialog();
+            if (czyOtwartoMape == true)
             {
-                WczytajMape(dlg.FileName);
+                WczytajMape(oknoDialogowe.FileName);
             }
         }
     }
