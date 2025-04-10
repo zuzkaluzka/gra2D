@@ -13,6 +13,9 @@
     <None Remove="laka.png" />
     <None Remove="las.png" />
     <None Remove="skala.png" />
+	<None Remove="sarna.png" />
+	<None Remove="siekiera.png" />
+	<None Remove="sciete-drzewo.png" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +23,9 @@
     <Resource Include="laka.png" />
     <Resource Include="las.png" />
     <Resource Include="skala.png" />
+	<Resource Include="sarna.png" />
+	<Resource Include="siekiera.png" />
+	<Resource Include="sciete-drzewo.png" />
   </ItemGroup>
 
 </Project>

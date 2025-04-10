@@ -14,11 +14,15 @@ namespace Gra2D
         public const int LAS = 1;     // las
         public const int LAKA = 2;     // łąka
         public const int SKALA = 3;   // skały
-        public const int ILE_TERENOW = 4;   // ile terenów
+        public const int SARNA = 4;  //sarna
+        public const int SIEKIERA = 5;  //siekiera
+        public const int SCIETE_DRZEWO = 6;  //ścięte drzewo
+        public const int ILE_TERENOW = 7;   // ile terenów
         // Mapa przechowywana jako tablica dwuwymiarowa int
         private int[,] mapa;
         private int szerokoscMapy;
         private int wysokoscMapy;
+        private int[,] oryginalnaMapa; // oryginalna mapa przechowywana jako tablica dwuwymiarowa
         // Dwuwymiarowa tablica kontrolek Image reprezentujących segmenty mapy
         private Image[,] tablicaTerenu;
         // Rozmiar jednego segmentu mapy w pikselach
@@ -35,6 +39,10 @@ namespace Gra2D
         private Image obrazGracza;
         // Licznik zgromadzonego drewna
         private int iloscDrewna = 0;
+        //zmienna sprawdzająca czy gracz ma przy sobie siekierę
+        private bool maSiekiere = false;
+        private bool czySarnaUciekla = false;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -55,6 +63,9 @@ namespace Gra2D
             obrazyTerenu[LAS] = new BitmapImage(new Uri("las.png", UriKind.Relative));
             obrazyTerenu[LAKA] = new BitmapImage(new Uri("laka.png", UriKind.Relative));
             obrazyTerenu[SKALA] = new BitmapImage(new Uri("skala.png", UriKind.Relative));
+            obrazyTerenu[SARNA] = new BitmapImage(new Uri("sarna.png", UriKind.Relative));
+            obrazyTerenu[SIEKIERA] = new BitmapImage(new Uri("siekiera.png", UriKind.Relative));
+            obrazyTerenu[SCIETE_DRZEWO] = new BitmapImage(new Uri("sciete-drzewo.png", UriKind.Relative));
         }
 
         // Wczytuje mapę z pliku tekstowego i dynamicznie tworzy tablicę kontrolek Image
@@ -66,6 +77,7 @@ namespace Gra2D
                 wysokoscMapy = linie.Length;
                 szerokoscMapy = linie[0].Split(' ', StringSplitOptions.RemoveEmptyEntries).Length;//zwraca liczbę elementów w tablicy
                 mapa = new int[wysokoscMapy, szerokoscMapy];
+                oryginalnaMapa = (int[,])mapa.Clone();
 
                 for (int y = 0; y < wysokoscMapy; y++)
                 {
@@ -73,6 +85,7 @@ namespace Gra2D
                     for (int x = 0; x < szerokoscMapy; x++)
                     {
                         mapa[y, x] = int.Parse(czesci[x]);//wczytanie mapy z pliku
+                        oryginalnaMapa[y, x] = mapa[y, x];
                     }
                 }
 
@@ -142,19 +155,107 @@ namespace Gra2D
             Grid.SetColumn(obrazGracza, pozycjaGraczaX);
         }
 
+        //funkcja do resetowania
+        private void ResetujGre()
+        {
+            for (int y = 0; y < wysokoscMapy; y++)
+            {
+                for (int x = 0; x < szerokoscMapy; x++)
+                {
+                    //ustawienie odpowiednich obrazów na mapie
+                    if (mapa[y, x] == LAS)
+                    {
+                        tablicaTerenu[y, x].Source = obrazyTerenu[LAS]; 
+                    }
+                    else if (mapa[y, x] == LAKA)
+                    {
+                        tablicaTerenu[y, x].Source = obrazyTerenu[LAKA];
+                    }
+                    else if (mapa[y, x] == SKALA)
+                    {
+                        tablicaTerenu[y, x].Source = obrazyTerenu[SKALA];
+                    }
+                }
+            }
+            for (int y = 0; y < wysokoscMapy; y++)
+            {
+                for (int x = 0; x < szerokoscMapy; x++)
+                {
+                    if (oryginalnaMapa[y, x] == LAS) 
+                    {
+                        tablicaTerenu[y, x].Source = obrazyTerenu[LAS];
+                        mapa[y, x] = LAS;
+                    }
+                    if (oryginalnaMapa[y, x] == SARNA)
+                    {
+                        tablicaTerenu[y, x].Source = obrazyTerenu[SARNA];
+                        mapa[y, x] = SARNA;
+                    }
+                    if (oryginalnaMapa[y, x] == SIEKIERA)
+                    {
+                        tablicaTerenu[y, x].Source = obrazyTerenu[SIEKIERA];
+                        mapa[y, x] = SIEKIERA;
+                    }
+                }
+            }
+            oryginalnaMapa = new int[wysokoscMapy, szerokoscMapy];
+            maSiekiere = false;
+            czySarnaUciekla = false;
+
+
+            //reset pozycji i drewna
+            pozycjaGraczaX = 0;
+            pozycjaGraczaY = 0;
+            iloscDrewna = 0;
+            EtykietaDrewna.Content = "Drewno: " + iloscDrewna;
+
+            //przywrócenie pozycji gracza
+            AktualizujPozycjeGracza();
+
+            MessageBox.Show("Gracz stanął na skale! Gra zrestartowana.");
+        }
+        private (int, int) LosowaPozycja()
+        {
+            Random rnd = new Random();
+            int x, y;
+            do
+            {
+                x = rnd.Next(0, szerokoscMapy);
+                y = rnd.Next(0, wysokoscMapy);
+            }
+            while (mapa[y, x] != LAS);
+
+            return (x, y);  
+        }
+
         // Obsługa naciśnięć klawiszy – ruch gracza oraz wycinanie lasu
         private void OknoGlowne_KeyDown(object sender, KeyEventArgs e)
         {
             int nowyX = pozycjaGraczaX;
             int nowyY = pozycjaGraczaY;
             //zmiana pozycji gracza
-            if (e.Key == Key.Up) nowyY--;
-            else if (e.Key == Key.Down) nowyY++;
-            else if (e.Key == Key.Left) nowyX--;
-            else if (e.Key == Key.Right) nowyX++;
+            if (e.Key == Key.W) nowyY--;
+            else if (e.Key == Key.S) nowyY++;
+            else if (e.Key == Key.A) nowyX--;
+            else if (e.Key == Key.D) nowyX++;
             //Gracz nie może wyjść poza mapę
             if (nowyX >= 0 && nowyX < szerokoscMapy && nowyY >= 0 && nowyY < wysokoscMapy)
             {
+                //reset gry gdy gracz stanie na skale
+                if (mapa[nowyY, nowyX] == SKALA)
+                {
+                    ResetujGre();
+                    return;
+                }
+                if (mapa[nowyY, nowyX] == LAS) //jeśli gracz stanął na pole las
+                {
+                    if (maSiekiere == true) //sprawdzenie czy gracz ma siekierę
+                    {
+                        UzytkownikMaSiekiere(nowyY, nowyX);
+
+                    }
+                }
+
                 // Gracz nie może wejść na pole ze skałami
                 if (mapa[nowyY, nowyX] != SKALA)
                 {
@@ -162,14 +263,66 @@ namespace Gra2D
                     pozycjaGraczaY = nowyY;
                     AktualizujPozycjeGracza();
                 }
+                if (mapa[nowyY, nowyX] == SARNA)
+                {
+                    NowaPozycjaSarny(nowyY, nowyX);
+                }
+                if (mapa[nowyY, nowyX] == SIEKIERA)
+                {
+                    ZmianaNaLake(nowyY, nowyX);
+                }
             }
+
 
             // Obsługa wycinania lasu – naciskamy klawisz C
             if (e.Key == Key.C)
             {
-                if (mapa[pozycjaGraczaY, pozycjaGraczaX] == LAS)//jeśli gracz stoi na polu lasu
+                WycinanieLasu(nowyY, nowyX);
+            }
+        }
+        private void UzytkownikMaSiekiere(int nowyY,int nowyX)
+            {
+                tablicaTerenu[nowyY, nowyX].Source = obrazyTerenu[SCIETE_DRZEWO];
+                oryginalnaMapa[nowyY, nowyX] = LAS; //zamiana poprzedniego pola na ścięte drzewo
+                iloscDrewna++;
+                EtykietaDrewna.Content = "Drewno: " + iloscDrewna;
+            }
+        private void NowaPozycjaSarny(int nowyY,int nowyX)
+        {
+            MessageBox.Show("Sarna uciekła!");
+            var (nowyYSarny, nowyXSarny) = LosowaPozycja();
+            oryginalnaMapa[nowyYSarny, nowyXSarny] = mapa[nowyYSarny, nowyXSarny];
+            tablicaTerenu[nowyYSarny, nowyXSarny].Source = obrazyTerenu[SARNA];
+            mapa[nowyYSarny, nowyXSarny] = SARNA;
+            if (czySarnaUciekla == false)
+            {
+                oryginalnaMapa[nowyY, nowyX] = SARNA;
+            }
+            tablicaTerenu[nowyY, nowyX].Source = obrazyTerenu[LAS];
+            mapa[nowyY, nowyX] = LAS;
+            czySarnaUciekla = true;
+        }
+        private void ZmianaNaLake(int nowyY,int nowyX)
+        {
+            maSiekiere = true;
+            tablicaTerenu[nowyY, nowyX].Source = obrazyTerenu[LAKA];
+            mapa[nowyY, nowyX] = LAKA;
+            oryginalnaMapa[nowyY, nowyX] = SIEKIERA;
+        }
+        private void WycinanieLasu(int nowyY, int nowyX)
+        {
+            if (mapa[pozycjaGraczaY, pozycjaGraczaX] == LAS)//jeśli gracz stoi na polu lasu
+            {
+                mapa[pozycjaGraczaY, pozycjaGraczaX] = LAKA;
+                if (oryginalnaMapa[pozycjaGraczaY, pozycjaGraczaX] == SARNA) //jeśli gracz stoi na polu sarna 
                 {
-                    mapa[pozycjaGraczaY, pozycjaGraczaX] = LAKA;
+                    tablicaTerenu[pozycjaGraczaY, pozycjaGraczaX].Source = obrazyTerenu[LAKA]; //obraz zmienia sie w łąkę
+                    iloscDrewna++;
+                    EtykietaDrewna.Content = "Drewno: " + iloscDrewna;
+                }
+                else
+                {
+                    oryginalnaMapa[pozycjaGraczaY, pozycjaGraczaX] = LAS; // na pozycję gracza zostaje przypisane pole las
                     tablicaTerenu[pozycjaGraczaY, pozycjaGraczaX].Source = obrazyTerenu[LAKA];
                     iloscDrewna++;
                     EtykietaDrewna.Content = "Drewno: " + iloscDrewna;
